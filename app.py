@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import re
 import tempfile
 import os
+from io import BytesIO
 
 st.title("📄 Debriefing Verwerker")
 
@@ -25,12 +26,9 @@ if uploaded_files:
     resultaten = {cat: [] for cat in categorieen}
 
     for uploaded_file in uploaded_files:
-        # Gebruik NamedTemporaryFile met delete=False, schrijf de inhoud erin
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
-            tmp.write(uploaded_file.read())
-            tmp_path = tmp.name
+        file_stream = BytesIO(uploaded_file.read())
+        doc = Document(file_stream)
 
-        doc = Document(tmp_path)
         datum = None
         dienst = None
 
@@ -58,8 +56,8 @@ if uploaded_files:
                             if tekst_volgende_rij:
                                 resultaten[cat].append((datum, dienst, tekst_volgende_rij))
 
-        # Verwijder tijdelijk bestand
-        os.unlink(tmp_path)
+        # # Verwijder tijdelijk bestand
+        # os.unlink(tmp_path)
 
     def sorteersleutel(item):
         volgorde = {"ochtend": 0, "tussen": 1, "avond": 2}
