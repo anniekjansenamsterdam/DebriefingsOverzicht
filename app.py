@@ -26,7 +26,8 @@ if uploaded_files:
     resultaten = {cat: [] for cat in categorieen}
 
     for uploaded_file in uploaded_files:
-        file_stream = BytesIO(uploaded_file.read())
+        data = uploaded_file.read()  # lees 1 keer
+        file_stream = BytesIO(data)  # maak BytesIO-object
         doc = Document(file_stream)
 
         datum = None
