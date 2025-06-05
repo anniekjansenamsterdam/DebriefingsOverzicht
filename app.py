@@ -15,13 +15,17 @@ categorieen = [
     "taken en opvallendheden"
 ]
 
-# Upload sectie
-uploaded_files = st.file_uploader("Upload één of meerdere .docx-bestanden", type=["docx"], accept_multiple_files=True)
+uploaded_files = st.file_uploader(
+    "Upload één of meerdere .docx-bestanden", 
+    type=["docx"], 
+    accept_multiple_files=True
+)
 
 if uploaded_files:
     resultaten = {cat: [] for cat in categorieen}
 
     for uploaded_file in uploaded_files:
+        # Gebruik NamedTemporaryFile met delete=False, schrijf de inhoud erin
         with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp:
             tmp.write(uploaded_file.read())
             tmp_path = tmp.name
@@ -30,6 +34,7 @@ if uploaded_files:
         datum = None
         dienst = None
 
+        # Zoek datum en dienst
         for table in doc.tables:
             for row in table.rows:
                 for i, cell in enumerate(row.cells):
@@ -40,6 +45,7 @@ if uploaded_files:
                         if i + 1 < len(row.cells):
                             dienst = row.cells[i + 1].text.strip()
 
+        # Zoek categorieën en teksten
         for table in doc.tables:
             rows = table.rows
             for i, row in enumerate(rows):
@@ -52,9 +58,9 @@ if uploaded_files:
                             if tekst_volgende_rij:
                                 resultaten[cat].append((datum, dienst, tekst_volgende_rij))
 
-        os.unlink(tmp_path)  # verwijder tijdelijk bestand
+        # Verwijder tijdelijk bestand
+        os.unlink(tmp_path)
 
-    # Sorteer resultaten
     def sorteersleutel(item):
         volgorde = {"ochtend": 0, "tussen": 1, "avond": 2}
         try:
@@ -73,7 +79,6 @@ if uploaded_files:
     for cat in resultaten:
         resultaten[cat].sort(key=sorteersleutel)
 
-    # Maak output-document
     vandaag = datetime.today()
     vorige_week = vandaag - timedelta(weeks=1)
     weeknummer = vorige_week.isocalendar()[1]
@@ -92,7 +97,7 @@ if uploaded_files:
                         p = doc_out.add_paragraph(style='List Bullet')
                         p.add_run(regel)
 
-    # Sla output tijdelijk op en geef als download
+    # Sla output tijdelijk op en maak downloadbutton
     with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp_output:
         doc_out.save(tmp_output.name)
         tmp_output_path = tmp_output.name
@@ -105,3 +110,5 @@ if uploaded_files:
             file_name=f"Week_{weeknummer}_Debriefingsoverzicht.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
+
+    # Optioneel: verwijder tijdelijk bestand na downloaden (kan iets complexer zijn ivm Streamlit's async)
