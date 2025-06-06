@@ -6,6 +6,29 @@ import tempfile
 import os
 from io import BytesIO
 
+# -------------------------------
+# Inloggen met users in secrets
+# -------------------------------
+def login():
+    st.sidebar.title("🔐 Login")
+    username = st.sidebar.text_input("Gebruikersnaam")
+    password = st.sidebar.text_input("Wachtwoord", type="password")
+    login_knop = st.sidebar.button("Inloggen")
+
+    if login_knop:
+        if username in st.secrets["users"] and st.secrets["users"][username] == password:
+            st.session_state["logged_in"] = True
+            st.session_state["user"] = username
+        else:
+            st.sidebar.error("Ongeldige gebruikersnaam of wachtwoord")
+
+if "logged_in" not in st.session_state or not st.session_state["logged_in"]:
+    login()
+    st.stop()
+
+# -------------------------------
+# Ingelogde content hieronder
+# -------------------------------
 st.title("📄 Debriefing Verwerker")
 
 categorieen = [
@@ -26,8 +49,8 @@ if uploaded_files:
     resultaten = {cat: [] for cat in categorieen}
 
     for uploaded_file in uploaded_files:
-        data = uploaded_file.read()  # lees 1 keer
-        file_stream = BytesIO(data)  # maak BytesIO-object
+        data = uploaded_file.read()
+        file_stream = BytesIO(data)
         doc = Document(file_stream)
 
         datum = None
@@ -56,9 +79,6 @@ if uploaded_files:
                             tekst_volgende_rij = rows[i + 1].cells[0].text.strip()
                             if tekst_volgende_rij:
                                 resultaten[cat].append((datum, dienst, tekst_volgende_rij))
-
-        # # Verwijder tijdelijk bestand
-        # os.unlink(tmp_path)
 
     def sorteersleutel(item):
         volgorde = {"ochtend": 0, "tussen": 1, "avond": 2}
@@ -96,7 +116,6 @@ if uploaded_files:
                         p = doc_out.add_paragraph(style='List Bullet')
                         p.add_run(regel)
 
-    # Sla output tijdelijk op en maak downloadbutton
     with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp_output:
         doc_out.save(tmp_output.name)
         tmp_output_path = tmp_output.name
@@ -109,5 +128,3 @@ if uploaded_files:
             file_name=f"Week_{weeknummer}_Debriefingsoverzicht.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
-
-    # Optioneel: verwijder tijdelijk bestand na downloaden (kan iets complexer zijn ivm Streamlit's async)
