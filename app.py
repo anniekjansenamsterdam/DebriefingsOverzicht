@@ -29,7 +29,7 @@ if "logged_in" not in st.session_state or not st.session_state["logged_in"]:
 # -------------------------------
 # Ingelogde content hieronder
 # -------------------------------
-st.title("📄 Debriefing Verwerker")
+st.title("📄 Debriefings Verwerker")
 
 categorieen = [
     "OVERLAST PERSONEN",
@@ -80,7 +80,7 @@ if uploaded_files:
                             if tekst_volgende_rij:
                                 resultaten[cat].append((datum, dienst, tekst_volgende_rij))
 
-    def sorteersleutel(item):
+    def sorteerdagdelen(item):
         volgorde = {"ochtend": 0, "tussen": 1, "avond": 2}
         try:
             datum = datetime.strptime(item[0], "%d-%m-%Y")
@@ -96,20 +96,41 @@ if uploaded_files:
         return (datum, dienst_index)
 
     for cat in resultaten:
-        resultaten[cat].sort(key=sorteersleutel)
+        resultaten[cat].sort(key=sorteerdagdelen)
 
-    vandaag = datetime.today()
-    vorige_week = vandaag - timedelta(weeks=1)
-    weeknummer = vorige_week.isocalendar()[1]
+    huidig_jaar = datetime.today().year
+    huidige_week = datetime.today().isocalendar()[1]
+
+    jaar_keuze = st.number_input("Selecteer jaar", min_value=2000, max_value=2100, value=huidig_jaar)
+    week_keuze = st.number_input("Selecteer weeknummer", min_value=1, max_value=53, value=huidige_week - 1)
+
+    weeknummer = int(week_keuze)
+    jaar = int(jaar_keuze)
 
     doc_out = Document()
-    doc_out.add_heading(f'Debriefingoverzicht Week {weeknummer}', 0)
+    doc_out.add_heading(f'Debriefingsoverzicht Week {weeknummer} - {jaar}', 0)
 
     for cat, items in resultaten.items():
         if items:
             doc_out.add_heading(cat.upper(), level=1)
             for datum, dienst, tekst in items:
-                doc_out.add_paragraph(f"{datum} ({dienst})", style='Heading 3')
+                try:
+                    datum_obj = datetime.strptime(datum, "%d-%m-%Y")
+                    dag_van_week = datum_obj.strftime("%A")  # Engelse dag
+                    dag_nl = {
+                        "Monday": "Maandag",
+                        "Tuesday": "Dinsdag",
+                        "Wednesday": "Woensdag",
+                        "Thursday": "Donderdag",
+                        "Friday": "Vrijdag",
+                        "Saturday": "Zaterdag",
+                        "Sunday": "Zondag"
+                    }.get(dag_van_week, dag_van_week)
+                except Exception:
+                    dag_nl = ""
+
+                doc_out.add_paragraph(f"{dag_nl} {datum} ({dienst})", style='Heading 3')
+
                 for regel in tekst.split('\n'):
                     regel = regel.strip()
                     if regel:
@@ -121,7 +142,7 @@ if uploaded_files:
         tmp_output_path = tmp_output.name
 
     with open(tmp_output_path, "rb") as file:
-        st.success("✅ Debriefing gegenereerd!")
+        st.success("✅ Debriefing is gegenereerd!")
         st.download_button(
             label="📥 Download samenvatting",
             data=file,
