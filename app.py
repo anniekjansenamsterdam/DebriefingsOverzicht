@@ -5,39 +5,65 @@ import re
 import tempfile
 import os
 from io import BytesIO
+import zipfile
+from lxml import etree
 
 # -------------------------------
 # Inloggen met users in secrets
 # -------------------------------
 def login():
-    st.sidebar.title("🔐 Login")
-    username = st.sidebar.text_input("Gebruikersnaam")
-    password = st.sidebar.text_input("Wachtwoord", type="password")
-    login_knop = st.sidebar.button("Inloggen")
+    st.title("🔐 Login")
+    username = st.text_input("Gebruikersnaam")
+    password = st.text_input("Wachtwoord", type="password")
+    login_knop = st.button("Inloggen")
 
     if login_knop:
         if username in st.secrets["users"] and st.secrets["users"][username] == password:
             st.session_state["logged_in"] = True
             st.session_state["user"] = username
         else:
-            st.sidebar.error("Ongeldige gebruikersnaam of wachtwoord")
+            st.error("Ongeldige gebruikersnaam of wachtwoord")
 
 if "logged_in" not in st.session_state or not st.session_state["logged_in"]:
     login()
     st.stop()
+
+
+
+def extract_date_picker_fields(docx_path):
+    namespaces = {
+        'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
+    }
+
+    with zipfile.ZipFile(docx_path) as docx_zip:
+        with docx_zip.open('word/document.xml') as xml_file:
+            tree = etree.parse(xml_file)
+            root = tree.getroot()
+
+            date_fields = []
+            for sdt in root.findall('.//w:sdt', namespaces):
+                # Kijk of dit een datumveld is
+                if sdt.find('.//w:date', namespaces) is not None:
+                    text_elements = sdt.findall('.//w:t', namespaces)
+                    value = ''.join(t.text for t in text_elements if t.text)
+                    date_fields.append(value)
+
+            return date_fields
+
 
 # -------------------------------
 # Ingelogde content hieronder
 # -------------------------------
 st.title("📄 Debriefings Verwerker")
 
-categorieen = [
-    "OVERLAST PERSONEN",
-    "JEUGDOVERLAST",
-    "AFVALPROBLEMATIEK",
-    "parkeeroverlast",
-    "taken en opvallendheden"
-]
+# Keuze voor onderdeel
+onderdeel = st.radio("Kies onderdeel:", ["VOV", "Nieuw-West"])
+
+# Categorieën per onderdeel
+categorieen_NW = ["OVERLAST PERSONEN", "JEUGDOVERLAST", "AFVALPROBLEMATIEK", "parkeeroverlast", "taken en opvallendheden"]
+categorieen_VOV = ["Jeugdoverlast", "Slapers/daklozen", "Geen/ongeldig vervoersbewijs", "Fietsen/steps/skaten/scooter", "Nooddeuren", "Roken", "Alcohol/drugs", "Diefstal", "Overig", "Werkopdracht 1", "Werkopdracht 2", "Werkopdracht 3", "Werkopdracht 4"]
+
+categorieen = categorieen_VOV if onderdeel == "VOV" else categorieen_NW
 
 uploaded_files = st.file_uploader(
     "Upload één of meerdere .docx-bestanden", 
@@ -56,16 +82,26 @@ if uploaded_files:
         datum = None
         dienst = None
 
-        # Zoek datum en dienst
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp_docx:
+            tmp_docx.write(data)
+            tmp_docx_path = tmp_docx.name
+
+        datumvelden = extract_date_picker_fields(tmp_docx_path)
+
+        # Kies eventueel de eerste datum die je vindt
+        if datumvelden:
+            datum = datumvelden[0]  # Of loop door om specifieke te vinden
+
+
         for table in doc.tables:
             for row in table.rows:
-                for i, cell in enumerate(row.cells):
-                    if "Datum dienst" in cell.text:
-                        if i + 1 < len(row.cells):
-                            datum = row.cells[i + 1].text.strip()
-                    if "Soort dienst" in cell.text:
-                        if i + 1 < len(row.cells):
-                            dienst = row.cells[i + 1].text.strip()
+                if len(row.cells) >= 2:
+                    label = row.cells[0].text.strip().lower().replace(":", "")
+                    value = row.cells[1].text.strip()
+                    if "datum dienst" in label and value:
+                        datum = value
+                    if "tijden + sector" in label and value:
+                        dienst = value
 
         # Zoek categorieën en teksten
         for table in doc.tables:
@@ -116,7 +152,7 @@ if uploaded_files:
             for datum, dienst, tekst in items:
                 try:
                     datum_obj = datetime.strptime(datum, "%d-%m-%Y")
-                    dag_van_week = datum_obj.strftime("%A")  # Engelse dag
+                    dag_van_week = datum_obj.strftime("%A")
                     dag_nl = {
                         "Monday": "Maandag",
                         "Tuesday": "Dinsdag",
@@ -146,6 +182,6 @@ if uploaded_files:
         st.download_button(
             label="📥 Download samenvatting",
             data=file,
-            file_name=f"Week_{weeknummer}_Debriefingsoverzicht.docx",
+            file_name=f"Week_{weeknummer}_Debriefingsoverzicht_{onderdeel}.docx",
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )

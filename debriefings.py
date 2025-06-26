@@ -9,14 +9,12 @@ vorige_week = vandaag - timedelta(weeks=1)
 weeknummer = vorige_week.isocalendar()[1]
 weekmap = f"Debriefingsformulieren/Week{weeknummer}"
 
-categorieen = [
-    "OVERLAST PERSONEN",
-    "JEUGDOVERLAST",
-    "AFVALPROBLEMATIEK",
-    "parkeeroverlast",
-    "taken en opvallendheden"
-]
+onderdeel = "NW"
 
+categorieen_NW = ["OVERLAST PERSONEN", "JEUGDOVERLAST", "AFVALPROBLEMATIEK", "parkeeroverlast", "taken en opvallendheden"]
+categorieen_VOV = ["Jeugdoverlast", "Slapers/daklozen", "Geen/ongeldig vervoersbewijs", "Fietsen/steps/skaten/scooter", "Nooddeuren", "Roken", "Alcohol/drugs", "Diefstal", "Overig"]
+
+categorieen = categorieen_NW if onderdeel == "NW" else categorieen_VOV
 resultaten = {cat: [] for cat in categorieen}
 
 
