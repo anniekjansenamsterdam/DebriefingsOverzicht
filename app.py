@@ -173,7 +173,7 @@ if uploaded_files:
     for cat, items in resultaten.items():
         if items:
             doc_out.add_heading(cat.upper(), level=1)
-            for datum, dienst, tekst in items:
+            for datum, dienst, inzetgebied, tekst in items:
                 try:
                     datum_obj = datetime.strptime(datum, "%d-%m-%Y")
                     dag_van_week = datum_obj.strftime("%A")
@@ -190,7 +190,7 @@ if uploaded_files:
                     dag_nl = ""
 
                 if onderdeel == "SAIL":
-                    doc_out.add_paragraph(f"{dag_nl} {datum} {dienst} ({inzetgebied})", style='Heading 3')
+                    doc_out.add_paragraph(f"{dag_nl} {datum} ({dienst}) - {inzetgebied}", style='Heading 3')
                 else:
                     doc_out.add_paragraph(f"{dag_nl} {datum} ({dienst})", style='Heading 3')
 
