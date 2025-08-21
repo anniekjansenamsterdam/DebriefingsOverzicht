@@ -57,13 +57,29 @@ def extract_date_picker_fields(docx_path):
 st.title("📄 Debriefings Verwerker")
 
 # Keuze voor onderdeel
-onderdeel = st.radio("Kies onderdeel:", ["VOV", "Nieuw-West"])
+onderdeel = st.radio("Kies onderdeel:", ["VOV", "Nieuw-West", "SAIL"])
 
 # Categorieën per onderdeel
 categorieen_NW = ["OVERLAST PERSONEN", "JEUGDOVERLAST", "AFVALPROBLEMATIEK", "parkeeroverlast", "taken en opvallendheden"]
 categorieen_VOV = ["Jeugdoverlast", "Slapers/daklozen", "Geen/ongeldig vervoersbewijs", "Fietsen/steps/skaten/scooter", "Nooddeuren", "Roken", "Alcohol/drugs", "Diefstal", "Overig", "Werkopdracht 1", "Werkopdracht 2", "Werkopdracht 3", "Werkopdracht 4"]
+categorieen_SAIL = [
+    "Vrijhouden van calamiteitenroutes en vaarroutes",
+    "Toezien op in- en uitstroom van het evenement",
+    "Illegale evenementen in de openbare ruimte",
+    "In hoeverre vielen andere vormen van overlast op?",
+    "Sfeerbeeld op straat",
+    "Beschrijf hoe het publiek reageerde op de aanwezigheid van en contacten met THOR:",
+    "Was er sprake van agressie en geweld (fysiek en/of verbaal) tegen collega's van THOR?"
+]
 
-categorieen = categorieen_VOV if onderdeel == "VOV" else categorieen_NW
+if onderdeel == "VOV":
+    categorieen = categorieen_VOV
+elif onderdeel == "Nieuw-West":
+    categorieen = categorieen_NW
+elif onderdeel == "SAIL":
+    categorieen = categorieen_SAIL
+else:
+    categorieen = []
 
 uploaded_files = st.file_uploader(
     "Upload één of meerdere .docx-bestanden", 
