@@ -97,6 +97,7 @@ if uploaded_files:
 
         datum = None
         dienst = None
+        inzetgebied = None
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp_docx:
             tmp_docx.write(data)
@@ -108,20 +109,20 @@ if uploaded_files:
         if datumvelden:
             datum = datumvelden[0]  # Of loop door om specifieke te vinden
 
-
+        # Zoek datum, dienst en inzetgebied
         for table in doc.tables:
             for row in table.rows:
-                if len(row.cells) >= 2:
-                    label = row.cells[0].text.strip().lower().replace(":", "")
-                    value = row.cells[1].text.strip()
-                    if "datum dienst" in label and value:
-                        datum = value
-                    elif "Datum dienst" in label and value:
-                        datum = value
-                    if "tijden + sector" in label and value:
-                        dienst = value
-                    elif "Soort dienst (ochtend/avond/nacht) + tijden" in label and value:
-                        dienst = value
+                for i, cell in enumerate(row.cells):
+                    if "Datum dienst" in cell.text and i + 1 < len(row.cells):
+                        datum = row.cells[i + 1].text.strip()
+                    if "datum dienst" in cell.text and i + 1 < len(row.cells):
+                        datum = row.cells[i + 1].text.strip()
+                    if "Soort dienst" in cell.text and i + 1 < len(row.cells):
+                        dienst = row.cells[i + 1].text.strip()
+                    if "Inzetgebied" in cell.text and i + 1 < len(row.cells):
+                        inzetgebied = row.cells[i + 1].text.strip()
+                    if "Inzetlocatie" in cell.text and i + 1 < len(row.cells):
+                        inzetgebied = row.cells[i + 1].text.strip()
 
         # Zoek categorieën en teksten
         for table in doc.tables:
@@ -134,7 +135,10 @@ if uploaded_files:
                         if i + 1 < len(rows):
                             tekst_volgende_rij = rows[i + 1].cells[0].text.strip()
                             if tekst_volgende_rij:
-                                resultaten[cat].append((datum, dienst, tekst_volgende_rij))
+                                if onderdeel == "SAIL":
+                                    resultaten[cat].append((datum, dienst, inzetgebied, tekst_volgende_rij))
+                                else:
+                                    resultaten[cat].append((datum, dienst, tekst_volgende_rij))
 
     def sorteerdagdelen(item):
         volgorde = {"ochtend": 0, "tussen": 1, "avond": 2}
@@ -185,7 +189,10 @@ if uploaded_files:
                 except Exception:
                     dag_nl = ""
 
-                doc_out.add_paragraph(f"{dag_nl} {datum} ({dienst})", style='Heading 3')
+                if onderdeel == "SAIL":
+                    doc_out.add_paragraph(f"{dag_nl} {datum} {dienst} ({inzetgebied})", style='Heading 3')
+                else:
+                    doc_out.add_paragraph(f"{dag_nl} {datum} ({dienst})", style='Heading 3')
 
                 for regel in tekst.split('\n'):
                     regel = regel.strip()
