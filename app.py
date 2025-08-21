@@ -116,7 +116,11 @@ if uploaded_files:
                     value = row.cells[1].text.strip()
                     if "datum dienst" in label and value:
                         datum = value
+                    elif "Datum dienst" in label and value:
+                        datum = value
                     if "tijden + sector" in label and value:
+                        dienst = value
+                    elif "Soort dienst (ochtend/avond/nacht) + tijden" in label and value:
                         dienst = value
 
         # Zoek categorieën en teksten
