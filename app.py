@@ -57,7 +57,7 @@ def extract_date_picker_fields(docx_path):
 st.title("📄 Debriefings Verwerker")
 
 # Keuze voor onderdeel
-onderdeel = st.radio("Kies onderdeel:", ["VOV", "Nieuw-West", "SAIL"])
+onderdeel = st.radio("Kies onderdeel:", ["VOV", "Nieuw-West"])
 
 # Categorieën per onderdeel
 categorieen_NW = ["OVERLAST PERSONEN", "JEUGDOVERLAST", "AFVALPROBLEMATIEK", "parkeeroverlast", "taken en opvallendheden"]
@@ -173,7 +173,7 @@ if uploaded_files:
     for cat, items in resultaten.items():
         if items:
             doc_out.add_heading(cat.upper(), level=1)
-            for datum, dienst, inzetgebied, tekst in items:
+            for datum, dienst, tekst in items:
                 try:
                     datum_obj = datetime.strptime(datum, "%d-%m-%Y")
                     dag_van_week = datum_obj.strftime("%A")
